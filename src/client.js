@@ -16,7 +16,7 @@ const userCol = document.querySelector('.flex-col1');
 const gameStatus = document.getElementById('gameStatus');
 
 connectBtn.addEventListener('click', () => {
-    socket = new WebSocket('ws://localhost:8080');
+    socket = new WebSocket('ws://tic-tac-toe-qrbc.vercel.app');
     socket.onopen = function(event) {
         gameStatus.textContent = "Connected to WebSocket server.";
     };
