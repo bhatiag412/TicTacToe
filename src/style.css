@@ -1,0 +1,354 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+    font-family: 'Ubuntu', sans-serif;
+}
+
+:root {
+    --sidebar-width: 20%;
+}
+
+body {
+    background-image: url(images.png);
+    background-repeat: repeat;
+    background-size: 22%;
+    background-color: #EEEEEE;
+}
+
+.container {
+    width: 70vw;
+    height: 70vh;
+    background-color: white;
+    margin: auto;
+    display: grid;
+    grid-template-columns: var(--sidebar-width) 80%;
+    clear: both;
+    position: absolute;
+    top: 15%;
+    left: 15%;
+    box-shadow: 5px 10px 8px 10px rgba(50, 46, 51, 0.5);
+    border-radius:20px;
+}
+
+.sidebar {
+    background-color: #686D76;
+    display: flex;
+    flex-flow: column;
+}
+
+.mainbar {
+    background-color: #EEEEEE;
+    position: relative;
+}
+
+.board {
+    position: relative;
+    margin: auto;
+    margin-top:10%;
+    grid-template-columns: repeat(3, auto);
+    justify-content: center;
+    align-content: center;
+    display: grid;
+}
+
+.cell {
+    width: 8rem;
+    height: 8rem;
+    border: 1px solid #373A40;
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    justify-items: center;
+    cursor: pointer;
+}
+
+.cell.x,
+.cell.circle {
+    cursor: not-allowed;
+}
+
+.cell:first-child,
+:nth-child(2),
+ :nth-child(3) {
+    border-top: none;
+}
+
+.cell:nth-child(3n+1) {
+    border-left: none;
+}
+
+.cell:nth-child(3n) {
+    border-right: none;
+}
+
+.cell:last-child,
+:nth-child(8),
+ :nth-child(7) {
+    border-bottom: none;
+}
+
+h1 {
+    background-color: rgba(255, 255, 255, 0.64);
+    display: block;
+    line-height: 3rem;
+    color: #373A40;
+    /* background-color: #373A40; */
+    text-align: center;
+    height: 50px;
+}
+
+/* h1::before {
+    content: "";
+    background-color: #EEEEEE;
+    display: inline-block;
+    position: absolute;
+    left: 0;
+    height: 4px;
+    width: 100vw;
+}
+
+h1::after {
+    content: "";
+    background-color: #EEEEEE;
+    display: inline-block;
+    position: absolute;
+    top: 36px;
+    left: 0;
+    height: 4px;
+    width: 100vw;
+} */
+
+.newGame,
+.connectBtn {
+    display: block;
+    width: 90%;
+    margin: 15px auto;
+    height: 30px;
+    color: #373A40;
+    font-size: 1.9vh;
+    background-color: #EEEEEE;
+    border: none;
+}
+button{
+    border-radius: 10px
+}
+
+.joinLabel {
+    text-align: center;
+
+    display: block;
+    align-content: center;
+    width: 90%;
+    margin: 15px auto;
+    margin-bottom: 0px;
+    height: 30px;
+    color: #373A40;
+    /* font-size: 1.3rem; */
+    background-color: #EEEEEE;
+    border: none;
+    border-radius: 10px;
+}
+.joinlabel1{
+    border-radius: 10px 10px  0 0 ;
+}
+.sidebar ul {
+    list-style: none;
+}
+
+.sidebar ul li {
+    /* border-radius: 0 0 10px 10px; */
+    width: 90%;
+    margin: 0 auto;
+    padding: 5px;
+    height: 30px;
+    font-size: 1rem;
+    background-color: #EEEEEE;
+    text-align: center;
+}
+
+.sidebar ul li:hover {
+    background-color: #373A40;
+    color: #f3b1eb;
+}
+li:last-child{
+    border-radius: 0 0 10px 10px;
+}
+
+button[type='submit'] {
+    display: block;
+    width: 90%;
+    margin: 2vh auto;
+    height: 30px;
+    color: rgb(0, 0, 0);
+    font-size: 1.3rem;
+    background-color: #EEEEEE;
+    border: none;
+  
+}
+.board.x .cell:not(.x):not(.circle):hover::before,
+.cell.x::before {
+    content: "";
+    position: absolute;
+    height: 100px;
+    width: 5px;
+    background-color: #373A40;
+    transform: rotate(45deg);
+}
+
+.board.x .cell:not(.x):not(.circle):hover::after,
+.cell.x::after {
+    content: "";
+    position: absolute;
+    height: 100px;
+    width: 5px;
+    background-color: #373A40;
+    transform: rotate(-45deg);
+}
+
+.board.circle .cell:not(.x):not(.circle):hover::before,
+.cell.circle::before {
+    content: '';
+    position: absolute;
+    height: 94px;
+    width: 90px;
+    background-color: #373A40;
+    border-radius: 50%;
+}
+
+.board.circle .cell:not(.x):not(.circle):hover::after,
+.cell.circle::after {
+    content: "";
+    position: absolute;
+    height: 84px;
+    width: 80px;
+    background-color: #EEEEEE;
+    border-radius: 50%;
+}
+
+
+
+.board.circle .cell:not(.x):not(.circle):hover::before,
+.board.x .cell:not(.x):not(.circle):hover::after,
+.board.x .cell:not(.x):not(.circle):hover::before {
+    background-color: #DC5F00;
+}
+.gameStatus{
+    text-align: center;
+}
+@media (max-width: 1200px) {
+    .container {
+        width: 90vw;
+        /* height: 70vh; */
+        top: 10%;
+        left: 10%;
+    }
+
+
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    .newGame,
+    .connectBtn,
+    .joinLabel,
+    button[type='submit'] {
+        font-size: 2vh;
+    }
+
+    .sidebar ul li {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 800px) {
+    .container {
+        width: 90vw;
+        /* height: 60vh; */
+        /* grid-template-columns: 1fr; */
+        top: 10%;
+        left: 5%;
+    }
+
+    /* .cell {
+        width: 60px;
+        height: 60px;
+    } */
+
+    h1 {
+        font-size: 1.2rem;
+    }
+
+    .newGame,
+    .connectBtn,
+    .joinLabel,
+    button[type='submit'] {
+        font-size: 1.8vh;
+    }
+
+    .sidebar ul li {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .container {
+        width: 100vw;
+        height: 100vh;
+        top: 2.5rem;
+        left: 0;
+        grid-template-columns: 1fr;
+        box-shadow: none;
+        /* border-radius: none */
+        border-radius: 20px 20px 0 0;
+        /* padding-top:20px ; */
+        overflow-y: scroll;
+    }
+
+    /* .cell {
+        width: 50px;
+        height: 50px;
+    } */
+     .sidebar{
+        height:100%;
+        /* max-height:30vh ; */
+        /* width: 50vw; */
+        flex-direction: row;
+        width: 100%;
+        justify-content: space-between;
+        padding: 0 30px;
+     }
+     .flex-col0{
+        display:flex ;
+        flex-direction: column;
+        width:50%;
+    }
+    .flex-col2{
+        display:flex ;
+        flex-direction: column;   
+        width:50%;
+     }
+.mainbar{
+    height: 100%;
+
+}
+.board{
+ width: 100vw;
+  
+}
+    h1 {
+        font-size: 2rem;
+    }
+
+    .newGame,
+    .connectBtn,
+    .joinLabel,
+    button[type='submit'] {
+        font-size: 1.6vh;
+    }
+
+    .sidebar ul li {
+        font-size: 0.7rem;
+    }
+}
