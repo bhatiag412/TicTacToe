@@ -14,12 +14,23 @@ const cells = document.querySelectorAll('.cell');
 const gameBoard = document.getElementById('board');
 const userCol = document.querySelector('.flex-col1');
 const gameStatus = document.getElementById('gameStatus');
+document.addEventListener('DOMContentLoaded', () => {
+    const socket = new WebSocket('ws://localhost:8080');
 
-connectBtn.addEventListener('click', () => {
-    socket = new WebSocket('ws://localhost:8080');
-    socket.onopen = function(event) {
-        gameStatus.textContent = "Connected to WebSocket server.";
-    };
+    socket.addEventListener('open', () => {
+        console.log('Connected to the WebSocket server');
+    });
+
+    socket.addEventListener('message', (event) => {
+        const msg = JSON.parse(event.data);
+        console.log('Message from server:', msg);
+        // Handle messages from the server
+    });
+// connectBtn.addEventListener('click', () => {
+//     socket = new WebSocket('ws://localhost:8080');
+//     socket.onopen = function(event) {
+//         gameStatus.textContent = "Connected to WebSocket server.";
+//     };
 
     newGameBtn.addEventListener('click', () => {
         const payLoad = {
