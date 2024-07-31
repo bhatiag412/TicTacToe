@@ -1,167 +1,223 @@
-const http = require('http')
-const WebSocket = require('websocket').server
-const games = {}
-const clients = {}
-const CROSS_SYMBOL = 'x'
-const CIRCLE_SYMBOL = 'o'
-const WIN_STATES = Array([0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6])
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const WebSocket = require('websocket').server;
+
+const games = {};
+const clients = {};
+const CROSS_SYMBOL = 'x';
+const CIRCLE_SYMBOL = 'o';
+const WIN_STATES = [
+    [0, 1, 2], [3, 4, 5], [6, 7, 8],
+    [0, 3, 6], [1, 4, 7], [2, 5, 8],
+    [0, 4, 8], [2, 4, 6]
+];
 
 const httpServer = http.createServer((request, response) => {
-    // 
-})
+    console.log(`Requested URL: ${request.url}`);
+    let filePath = path.join(__dirname, request.url === '/' ? 'index.html' : request.url);
+    const extname = path.extname(filePath);
+
+    let contentType = 'text/html';
+    switch (extname) {
+        case '.js':
+            contentType = 'text/javascript';
+            break;
+        case '.css':
+            contentType = 'text/css';
+            break;
+        case '.json':
+            contentType = 'application/json';
+            break;
+        case '.png':
+            contentType = 'image/png';
+            break;
+        case '.jpg':
+            contentType = 'image/jpg';
+            break;
+        case '.wav':
+            contentType = 'audio/wav';
+            break;
+    }
+
+    fs.readFile(filePath, (error, content) => {
+        if (error) {
+            if (error.code === 'ENOENT') {
+                fs.readFile(path.join(__dirname, '404.html'), (error, content) => {
+                    response.writeHead(404, { 'Content-Type': 'text/html' });
+                    response.end(content, 'utf8');
+                });
+            } else {
+                response.writeHead(500);
+                response.end('Server Error: ' + error.code);
+            }
+        } else {
+            response.writeHead(200, { 'Content-Type': contentType });
+            response.end(content, 'utf8');
+        }
+    });
+});
 
 const socketServer = new WebSocket({
-    'httpServer': httpServer
-})
+    httpServer: httpServer
+});
+
 socketServer.on('request', request => {
-    const connection = request.accept(null, request.origin)
-    connection.on('open', connectionOpened)
-    connection.on('close', () => {})
-    connection.on('message', messageHandler)
+    const connection = request.accept(null, request.origin);
 
-    const clientId = Math.round(Math.random() * 100) + Math.round(Math.random() * 100) + Math.round(Math.random() * 100)
-    clients[clientId] = { 'clientId': clientId, 'connection': connection }
-    connection.send(JSON.stringify({ 'method': 'connect', 'clientId': clients[clientId].clientId }))
-    sendAvailableGames()
-})
+    const clientId = Math.round(Math.random() * 1000); // Better random ID generation
+    clients[clientId] = { clientId: clientId, connection: connection };
+    connection.send(JSON.stringify({ method: 'connect', clientId: clientId }));
 
-httpServer.listen(8080, () => { console.log('server listening on port 8080') })
+    sendAvailableGames();
 
-function connectionOpened() {
-    connection.send('connection with server opend')
-}
+    connection.on('message', message => {
+        const msg = JSON.parse(message.utf8Data);
+        handleClientMessage(msg, connection);
+    });
 
-function messageHandler(message) {
-    const msg = JSON.parse(message.utf8Data)
-    let player = {}
+    connection.on('close', () => {
+        // Handle client disconnection if needed
+        delete clients[clientId];
+        sendAvailableGames();
+    });
+});
+
+httpServer.listen(8080, () => {
+    console.log('Server listening on port 8080');
+});
+
+function handleClientMessage(msg, connection) {
     switch (msg.method) {
         case 'create':
-            // create logic
-            player = {
-                'clientId': msg.clientId,
-                'symbol': CROSS_SYMBOL,
-                'isTurn': true,
-                'wins': 0,
-                'lost': 0
-            }
-            const gameId = Math.round(Math.random() * 100) + Math.round(Math.random() * 100) + Math.round(Math.random() * 100)
-            const board = [
-                '', '', '',
-                '', '', '',
-                '', '', ''
-            ]
-            games[gameId] = {
-                'gameId': gameId,
-                'players': Array(player),
-                'board': board
-            }
-            const payLoad = {
-                'method': 'create',
-                'game': games[gameId]
-            }
-            const conn = clients[msg.clientId].connection
-            conn.send(JSON.stringify(payLoad))
-            sendAvailableGames()
+            handleCreateGame(msg);
             break;
         case 'join':
-            // join game logic
-            player = {
-                'clientId': msg.clientId,
-                'symbol': CIRCLE_SYMBOL,
-                'isTurn': false,
-                'wins': 0,
-                'lost': 0
-            }
-            games[msg.gameId].players.push(player)
-
-            clients[msg.clientId].connection.send(JSON.stringify({
-                'method': 'join',
-                'game': games[msg.gameId]
-            }))
-
-            makeMove(games[msg.gameId])
-            break
-
+            handleJoinGame(msg);
+            break;
         case 'makeMove':
-            console.log('before makeMove' + msg.game.gameId)
-            games[msg.game.gameId].board = msg.game.board
-
-            let currPlayer
-            let playerSymbol
-            msg.game.players.forEach((player) => {
-                if (player.isTurn) {
-                    currPlayer = player.clientId
-                    playerSymbol = player.symbol
-                }
-            })
-            let isWinner = false
-            console.log(`game borad is ${games[msg.game.gameId].board}`)
-            isWinner = WIN_STATES.some((row) => {
-                return row.every((cell) => { return games[msg.game.gameId].board[cell] == playerSymbol ? true : false })
-            })
-            console.log(`isWinner = ${isWinner} symbol= ${playerSymbol}`)
-            if (isWinner) {
-                const payLoad = {
-                    'method': 'gameEnds',
-                    'winner': playerSymbol
-                }
-                console.log(`isWinner = ${isWinner} symbol= ${playerSymbol}`)
-                games[msg.game.gameId].players.forEach(player => {
-                    clients[player.clientId].connection.send(JSON.stringify(payLoad))
-                })
-                break
-            }
-            // logic for draw goes herer
-            else {
-                const isDraw = WIN_STATES.every(state => {
-                    return state.some(index => {
-                        return games[msg.game.gameId].board[index] == 'x'
-                    }) && state.some(index => {
-                        return games[msg.game.gameId].board[index] == 'o'
-                    })
-                })
-                if (isDraw) {
-                    const payLoad = {
-                        'method': 'draw',
-                    }
-                    games[msg.game.gameId].players.forEach(player => {
-                        clients[player.clientId].connection.send(JSON.stringify(payLoad))
-                    })
-                    break
-                }
-            }
-            games[msg.game.gameId].players.forEach((player) => {
-                player.isTurn = !player.isTurn
-            })
-            makeMove(games[msg.game.gameId])
-            break
+            handleMakeMove(msg);
+            break;
+        default:
+            console.log('Unknown method:', msg.method);
+            break;
     }
 }
 
+function handleCreateGame(msg) {
+    const player = {
+        clientId: msg.clientId,
+        symbol: CROSS_SYMBOL,
+        isTurn: true,
+        wins: 0,
+        lost: 0
+    };
+
+    const gameId = Math.round(Math.random() * 1000); // Better random ID generation
+    const board = Array(9).fill('');
+
+    games[gameId] = {
+        gameId: gameId,
+        players: [player],
+        board: board
+    };
+
+    const payLoad = {
+        method: 'create',
+        game: games[gameId]
+    };
+
+    clients[msg.clientId].connection.send(JSON.stringify(payLoad));
+    sendAvailableGames();
+}
+
+function handleJoinGame(msg) {
+    const player = {
+        clientId: msg.clientId,
+        symbol: CIRCLE_SYMBOL,
+        isTurn: false,
+        wins: 0,
+        lost: 0
+    };
+
+    games[msg.gameId].players.push(player);
+
+    const payLoad = {
+        method: 'join',
+        game: games[msg.gameId]
+    };
+
+    clients[msg.clientId].connection.send(JSON.stringify(payLoad));
+
+    makeMove(games[msg.gameId]);
+}
+
+function handleMakeMove(msg) {
+    const game = games[msg.game.gameId];
+    game.board = msg.game.board;
+
+    const currPlayer = game.players.find(player => player.isTurn);
+    const playerSymbol = currPlayer.symbol;
+
+    const isWinner = WIN_STATES.some(row => {
+        return row.every(cell => game.board[cell] === playerSymbol);
+    });
+
+    if (isWinner) {
+        const payLoad = {
+            method: 'gameEnds',
+            winner: playerSymbol
+        };
+        game.players.forEach(player => {
+            clients[player.clientId].connection.send(JSON.stringify(payLoad));
+        });
+        return;
+    }
+
+    const isDraw = WIN_STATES.every(state => {
+        return state.some(index => game.board[index] === 'x') &&
+               state.some(index => game.board[index] === 'o');
+    });
+
+    if (isDraw) {
+        const payLoad = {
+            method: 'draw'
+        };
+        game.players.forEach(player => {
+            clients[player.clientId].connection.send(JSON.stringify(payLoad));
+        });
+        return;
+    }
+
+    game.players.forEach(player => {
+        player.isTurn = !player.isTurn;
+    });
+
+    makeMove(game);
+}
 
 function makeMove(game) {
     const payLoad = {
-        'method': 'updateBoard',
-        'game': game
-    }
-    game.board.forEach(cell => console.log(`  ${cell}`))
-    game.players.forEach((player) => {
-        console.log(`player ${player.clientId}`)
-        clients[player.clientId].connection.send(JSON.stringify(payLoad))
-    })
+        method: 'updateBoard',
+        game: game
+    };
 
+    game.players.forEach(player => {
+        clients[player.clientId].connection.send(JSON.stringify(payLoad));
+    });
 }
 
 function sendAvailableGames() {
+    const allGames = Object.values(games)
+        .filter(game => game.players.length < 2)
+        .map(game => game.gameId);
 
-    const allGames = []
-    for (const k of Object.keys(games)) {
-        if (games[k].players.length < 2) {
-            allGames.push(games[k].gameId)
-        }
-    }
-    const payLoad = { 'method': 'gamesAvail', 'games': allGames }
-    for (const c of Object.keys(clients))
+    const payLoad = {
+        method: 'gamesAvail',
+        games: allGames
+    };
 
-    { clients[c].connection.send(JSON.stringify(payLoad)) }
+    Object.values(clients).forEach(client => {
+        client.connection.send(JSON.stringify(payLoad));
+    });
 }
